@@ -94,15 +94,12 @@ Entry:
     call LoadBytes
 
   .load_palettes
-    ld a, [DMGObjPalette0]
-    ld [rOBP0], a
-
-    ld hl, CGBObjPalettes
-    ld b, CGBObjPalettesEnd - CGBObjPalettes
+    ld hl, SpritesPalettes
+    ld b, SpritesPalettesEnd - SpritesPalettes
     call LoadObjPalettesCGB
 
-    ld hl, CGBBgPalettes
-    ld b, CGBBgPalettesEnd - CGBBgPalettes
+    ld hl, TilesPalettes
+    ld b, TilesPalettesEnd - TilesPalettes
     call LoadBgPalettesCGB
 
   call GenerateTerrain
@@ -342,7 +339,6 @@ GenerateForest:
     add 8
     ld [hli], a
 
-    ; random tile: TREE_TILE_A or TREE_TILE_B
     call RandomByte
     and 1
     jr z, .tile_a
@@ -368,17 +364,14 @@ GenerateForest:
 ; ==========================================================================|80|
 
 ; ======================================> GAME DATA <=======================|80|
-DMGObjPalette0:
-  db %11100100
-
-CGBObjPalettes:
+SpritesPalettes:
     dw 32767, 801, 5728, 6593
     dw 32767, 32125, 8735, 13569
-CGBObjPalettesEnd:
+SpritesPalettesEnd:
 
-CGBBgPalettes:
+TilesPalettes:
     dw 759, 1451, 649, 9729
-CGBBgPalettesEnd:
+TilesPalettesEnd:
 
 GameTiles:
   TilePlayerA:
