@@ -83,10 +83,8 @@ Entry:
     ld b, CGBObjPalettesEnd - CGBObjPalettes
     call LoadObjPalettesCGB
 
-  .draw_player
-
   call InitPlayer
-  call InitTree
+  call InitTerrain
 
   .turn_lcd_on
   ; LCD on, sprites on
@@ -243,26 +241,38 @@ AnimatePlayer:
   ret
 
 InitPlayer:
-  ld hl, _OAMRAM
-  ld a, SPRITE_Y_CENTER
+  ld hl, _OAMRAM                        ; sprite slot 0
+  ld a, SPRITE_Y_CENTER                 ; Y pos
   ld [hli], a
-  ld a, SPRITE_X_CENTER
+  ld a, SPRITE_X_CENTER                 ; X pos
   ld [hli], a
-  ld a, 1
+  ld a, [PlayerAnimFrame]               ; current animation frame
   ld [hli], a
-  ld [hl], a         ; attrs: CGB OBJ palette 1, VRAM bank 0
-
-InitTree:
-  ld hl, _OAMRAM + 8
-  ld a, SPRITE_Y_CENTER
-  ld [hli], a
-  ld a, SPRITE_X_CENTER - 16
-  ld [hli], a
-  ld a, 2              ; TileTree = tile 2
-  ld [hli], a
-  ld a, 0              ; palette 0
+  ld a, 1                               ; palette
   ld [hli], a
   ret
+
+InitTerrain:
+  ld hl, _OAMRAM + 8                    ; sprite slot 2
+  ld a, SPRITE_Y_CENTER                 ; Y pos
+  ld [hli], a
+  ld a, SPRITE_X_CENTER - 16            ; X pos
+  ld [hli], a
+  ld a, 2                               ; tile
+  ld [hli], a
+  ld a, 0                               ; palette
+  ld [hli], a
+
+  ld hl, _OAMRAM + 12                   ; sprite slot 3
+  ld a, SPRITE_Y_CENTER - 16
+  ld [hli], a
+  ld a, SPRITE_X_CENTER + 24
+  ld [hli], a
+  ld a, 3                               ; tile id
+  ld [hli], a
+  ld a, 0                               ; palette
+  ld [hli], a
+ret
 
 ; ==========================================================================|80|
 
@@ -278,7 +288,6 @@ CGBObjPalette0:
   dw $14E0
 CGBObjPalette0End:
 
-; Palette used by tiles 0 and 1
 CGBObjPalette1:
   dw $7FFF
   dw $7D7D
@@ -297,5 +306,8 @@ TilePlayerB:
 TileTree:
   DB $38,$46,$68,$96,$E4,$1B,$6E,$91
   DB $D8,$27,$90,$6F,$00,$3E,$18,$18
+TileTree2:
+  DB $30,$08,$2E,$11,$DC,$03,$90,$66
+  DB $10,$18,$60,$20,$10,$10,$10,$10
 GameTilesEnd:
 ; ==========================================================================|80|
