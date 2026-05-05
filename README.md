@@ -30,3 +30,6 @@ Check [/P1X-GBC-ENGINE/](P1X-GBC-ENGINE) folder.
 
 ### Audio
 - hUGETracker [nickfa.ro/wiki/hUGETracker](https://nickfa.ro/wiki/hUGETracker)
+
+### Build System
+- Zig [ziglang.org](https://ziglang.org/)
