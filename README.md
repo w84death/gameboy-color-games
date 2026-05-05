@@ -5,9 +5,12 @@
 This project is to create a simple engine and learn GBC processor instructions.
 
 ## Hello, World Learning Project
-![Screenshot](HelloWorld/screenshot.png)
-
+![Screenshot](HelloWorld/DOCS/screenshot.png)
 Check [/HelloWorld/](HelloWorld) folder.
+
+## P1X GBC Engine 
+![Screenshot](P1X-GBC-ENGINE/DOCS/screenshot.png)
+Check [/P1X-GBC-ENGINE/](P1X-GBC-ENGINE) folder.
 
 ## Tooling
 ### Emulation
