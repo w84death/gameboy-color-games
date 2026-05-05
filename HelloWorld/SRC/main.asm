@@ -17,14 +17,26 @@ DEF DPAD_DOWN_BIT                       EQU $0003
 DEF SPRITE_TILE_ADDR                    EQU $8000
 DEF SPRITE_X_CENTER                     EQU 80 + 8
 DEF SPRITE_Y_CENTER                     EQU 72 + 16
+DEF PLAYER_ANIM_DELAY                   EQU 4
 
 ; ==========================================================================|80|
 
-; ======================================> HEADEWR <=========================|80|
+; ======================================> HEADER DATA <=====================|80|
 SECTION "Header", ROM0[$100]
   nop
   jp Entry
   ds $150 - @, 0
+; ==========================================================================|80|
+
+; ======================================> WRAM DATA <=======================|80|
+SECTION "WRAM Data", WRAM0
+
+FrameCounter:
+  ds 1
+PlayerAnimTimer:
+  ds 1
+PlayerAnimFrame:
+  ds 1   ; 0 or 1
 ; ==========================================================================|80|
 
 ; ======================================> MAIN SECTION <====================|80|
@@ -36,6 +48,13 @@ Entry:
 
   xor a
   ld [rLCDC], a
+
+  xor a
+  ld [FrameCounter], a
+  ld [PlayerAnimFrame], a
+
+  ld a, PLAYER_ANIM_DELAY
+  ld [PlayerAnimTimer], a
 
   ; VRAM bank 0
   xor a
@@ -65,14 +84,9 @@ Entry:
     call LoadObjPalettesCGB
 
   .draw_player
-    ld hl, _OAMRAM
-    ld a, SPRITE_Y_CENTER
-    ld [hli], a
-    ld a, SPRITE_X_CENTER
-    ld [hli], a
-    xor a
-    ld [hli], a
-    ld [hl], a         ; attrs: CGB OBJ palette 0, VRAM bank 0
+
+  call InitPlayer
+  call InitTree
 
   .turn_lcd_on
   ; LCD on, sprites on
@@ -83,7 +97,7 @@ Entry:
 MainLoop:
   call WaitVBlank
   call HandleDPad
-  call WaitVBlank
+  call AnimatePlayer
   jr MainLoop
 
 ; ==========================================================================|80|
@@ -204,6 +218,52 @@ MoveDown:
   ld hl, _OAMRAM
   inc [hl]
   ret
+
+AnimatePlayer:
+  .update_timer:
+    ld a, [PlayerAnimTimer]
+    dec a
+    ld [PlayerAnimTimer], a
+    jr nz, .done
+
+  .reset_timer:
+    ld a, PLAYER_ANIM_DELAY
+    ld [PlayerAnimTimer], a
+
+  .swap_frames:
+    ld a, [PlayerAnimFrame]
+    xor 1
+    ld [PlayerAnimFrame], a
+
+  .apply_tile:
+  ld hl, _OAMRAM + 2
+  ld [hl], a
+
+.done
+  ret
+
+InitPlayer:
+  ld hl, _OAMRAM
+  ld a, SPRITE_Y_CENTER
+  ld [hli], a
+  ld a, SPRITE_X_CENTER
+  ld [hli], a
+  ld a, 1
+  ld [hli], a
+  ld [hl], a         ; attrs: CGB OBJ palette 1, VRAM bank 0
+
+InitTree:
+  ld hl, _OAMRAM + 8
+  ld a, SPRITE_Y_CENTER
+  ld [hli], a
+  ld a, SPRITE_X_CENTER - 16
+  ld [hli], a
+  ld a, 2              ; TileTree = tile 2
+  ld [hli], a
+  ld a, 0              ; palette 0
+  ld [hli], a
+  ret
+
 ; ==========================================================================|80|
 
 ; ======================================> GAME DATA <=======================|80|
