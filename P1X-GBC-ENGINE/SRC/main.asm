@@ -18,6 +18,21 @@ DEF SPRITE_TILE_ADDR                    EQU $8000
 DEF BG_TILE_ADDR                        EQU $8000
 DEF BG_MAP_ADDR                         EQU _SCRN0
 
+DEF SCREEN_WIDTH                        EQU 160
+DEF SCREEN_HEIGHT                       EQU 144
+DEF TILE_SIZE                           EQU 8
+DEF SPRITE_WIDTH                        EQU 8
+DEF SPRITE_HEIGHT                       EQU 8
+
+DEF OAM_X_OFFSET                        EQU 8
+DEF OAM_Y_OFFSET                        EQU 16
+DEF OAM_RIGHT_THRESH                    EQU 152
+DEF OAM_LEFT_THRESH                     EQU 16
+DEF OAM_TOP_THRESH                      EQU 24
+DEF OAM_BOTTOM_THRESH                   EQU 144
+DEF CAMERA_X_MAX                        EQU 96
+DEF CAMERA_Y_MAX                        EQU 112
+
 DEF TREE_COUNT                          EQU 24
 DEF SPRITE_X_CENTER                     EQU 80 + 8
 DEF SPRITE_Y_CENTER                     EQU 72 + 8
@@ -28,10 +43,10 @@ DEF PLAYER_OAM_ADDR                     EQU _OAMRAM + PLAYER_SLOT * 4
 
 DEF TREE_TILE_A                         EQU 2
 DEF TREE_TILE_B                         EQU 3
-DEF TILES_BG_INDEX_START                EQU 4
-DEF PAL_TREE                            EQU 0
-DEF PAL_PLAYER                          EQU 1
-DEF PAL_GROUND                          EQU 0
+DEF TILES_BG_INDEX_START                EQU 2
+DEF PAL_PLAYER                          EQU 0   ; Obj pal
+DEF PAL_TREE                            EQU 0   ; Bg pal
+DEF PAL_GROUND                          EQU 1
 ; ==========================================================================|80|
 
 ; ======================================> HEADER DATA <=====================|80|
@@ -43,14 +58,12 @@ SECTION "Header", ROM0[$100]
 
 ; ======================================> WRAM DATA <=======================|80|
 SECTION "WRAM Data", WRAM0
-RandomSeed:
-  ds 1
-FrameCounter:
-  ds 1
-PlayerAnimTimer:
-  ds 1
-PlayerAnimFrame:
-  ds 1   ; 0 or 1
+RandomSeed:                             ds 1
+FrameCounter:                           ds 1
+PlayerAnimTimer:                        ds 1
+PlayerAnimFrame:                        ds 1
+CameraX:                                ds 1
+CameraY:                                ds 1
 ; ==========================================================================|80|
 
 ; ======================================> MAIN SECTION <====================|80|
@@ -63,22 +76,28 @@ Entry:
   xor a
   ld [rLCDC], a
 
+  .init_randomizer
   ld a, [rDIV]
   or $01                                ; avoid zero
   ld [RandomSeed], a
 
+  .init_camera
+  xor a
+  ld [CameraX], a
+  ld [CameraY], a
+
+  .init_player
   xor a
   ld [FrameCounter], a
   ld [PlayerAnimFrame], a
-
   ld a, PLAYER_ANIM_DELAY
   ld [PlayerAnimTimer], a
 
-  ; VRAM bank 0
+  .init_vram
   xor a
   ld [rVBK], a
 
-  ; Clear _OAMRAM
+  .init_oamram
   ld hl, _OAMRAM
   ld b, 160
   .clear_oam
@@ -104,9 +123,8 @@ Entry:
 
   call GenerateTerrain
   call InitPlayer
-  call GenerateForest
 
-  .turn_lcd_on
+  .init_lcd
   ld a, LCDCF_ON | LCDCF_OBJON | LCDCF_BGON | LCDCF_BG8000 | LCDCF_BG9800
   ld [rLCDC], a
 
@@ -115,6 +133,7 @@ MainLoop:
   call WaitVBlank
   call HandleDPad
   call AnimatePlayer
+  call UpdateCamera
   jr MainLoop
 
 ; ==========================================================================|80|
@@ -205,15 +224,23 @@ WaitForAnyDPad:
     jr z, .wait
   ret
 
+UpdateCamera:
+  ld a, [CameraX]
+  ld [rSCX], a
+  ld a, [CameraY]
+  ld [rSCY], a
+ret
+
 HandleDPad:
   call ReadDPad
-  bit DPAD_RIGHT_BIT, a
+  ld b, a
+  bit DPAD_RIGHT_BIT, b
   call z, MoveRight
-  bit DPAD_LEFT_BIT, a
+  bit DPAD_LEFT_BIT, b
   call z, MoveLeft
-  bit DPAD_UP_BIT, a
+  bit DPAD_UP_BIT, b
   call z, MoveUp
-  bit DPAD_DOWN_BIT, a
+  bit DPAD_DOWN_BIT, b
   call z, MoveDown
   ret
 
@@ -226,24 +253,81 @@ ReadDPad:
   ret
 
 MoveRight:
-  ld hl, PLAYER_OAM_ADDR + 1  ; sprite X
+  ld hl, PLAYER_OAM_ADDR + 1
+  ld a, [hl]
+  cp OAM_RIGHT_THRESH
+  jr nc, .scroll_camera
+
   inc [hl]
+  ret
+
+  .scroll_camera
+  ld hl, CameraX
+  ld a, [hl]
+  cp CAMERA_X_MAX
+  ret nc
+
+  inc a
+  ld [hl], a
   ret
 
 MoveLeft:
-  ld hl, PLAYER_OAM_ADDR + 1
+  ld hl, PLAYER_OAM_ADDR + 1            ; sprite X
+  ld a, [hl]
+  cp OAM_LEFT_THRESH
+  jr c, .scroll_camera
+
   dec [hl]
+  ret
+
+  .scroll_camera
+  ld hl, CameraX
+  ld a, [hl]
+  or a                                  ; set zero flag if a is zero
+  ret z                                 ; return if zero
+
+  dec a
+  ld [hl], a
   ret
 
 MoveUp:
-  ld hl, PLAYER_OAM_ADDR      ; sprite Y
+  ld hl, PLAYER_OAM_ADDR                ; sprite Y
+  ld a, [hl]
+  cp OAM_TOP_THRESH                     ; compare player Y with top threshold
+  jr c, .scroll_camera                  ; jump if position is bigger
+
   dec [hl]
   ret
 
+  .scroll_camera
+  ld hl, CameraY
+  ld a, [hl]
+  or a
+  ret z
+
+  dec a
+  ld [hl], a
+  ret
+
 MoveDown:
-  ld hl, PLAYER_OAM_ADDR
+  ld hl, PLAYER_OAM_ADDR                ; sprite Y
+  ld a, [hl]
+  cp OAM_BOTTOM_THRESH
+  jr nc, .scroll_camera
+
   inc [hl]
   ret
+
+  .scroll_camera
+  ld hl, CameraY
+  ld a, [hl]
+  cp CAMERA_Y_MAX
+  ret nc
+
+  inc a
+  ld [hl], a
+  ret
+
 
 AnimatePlayer:
   .update_timer:
@@ -281,119 +365,38 @@ InitPlayer:
   ret
 
 GenerateTerrain:
-  xor a
-  ld [rVBK], a
   ld hl, _SCRN0
-  ld bc, 32 * 32
+  ld bc, 32 * 32                        ; loop index i16
 
   .next_tile
+    xor a
+    ld [rVBK], a                        ; zero for tile data
+
     call RandomByte
-    and %00000011                       ; get 0..3
-    cp 3
-    jr nz, .valid
-    xor a                               ; convert 3 to 0 -> 0..2
-  .valid
-    add a, TILES_BG_INDEX_START         ; convert to tiles IDs
-    ld [hli], a
+    and %00000111                       ; get 0..7
+    ld d, a                             ; save tile index
+    add a, TILES_BG_INDEX_START         ; shift over player sprites
+    ld [hl], a                          ; write tile id
 
-    dec bc
-    ld a, b
-    or c
-    jr nz, .next_tile
-
-  .gen_attributes
     ld a, 1
-    ld [rVBK], a
+    ld [rVBK], a                        ; one for attributes
 
-    ld hl, _SCRN0
-    ld bc, 32 * 32
-    ld d, PAL_GROUND
+    ld a, d                             ; load tile index
+    cp 4                                ; 0..3 vs 4..7
+    xor a                               ; set pal 0
+    jr c, .pal_set                      ; if <4 skip pal 1
+    ld a, 1                             ; set pal 1
+    .pal_set
+    ld [hli], a                         ; write attribute and inc hl poiner
 
-  .write_attrs
-    ld a, d
-    ld [hli], a
-
-    dec bc
-    ld a, b
-    or c
-    jr nz, .write_attrs
+    dec bc                              ; reduce loop index i16
+    ld a, b                             ; copy high byte of index
+    or c                                ; or with low, if both 0 then zero flag
+    jr nz, .next_tile                   ; if non-zero repeat
 
     xor a
-    ld [rVBK], a
+        ld [rVBK], a
     ret
-
-GenerateForest:
-  ld hl, _OAMRAM + TREE_FIRST_SLOT * 4
-  ld c, TREE_COUNT
-
-  .next_tree
-    ; random Y: 24..127
-    call RandomByte
-    and %01111111
-    add 24
-    ld [hli], a
-
-    ; random X: 8..167
-    call RandomByte
-    and %01111111
-    add 8
-    ld [hli], a
-
-    call RandomByte
-    and 1
-    jr z, .tile_a
-
-  .tile_b
-    ld a, TREE_TILE_B
-    jr .write_tile
-
-  .tile_a
-    ld a, TREE_TILE_A
-
-  .write_tile
-    ld [hli], a
-
-    ; palette 0
-    ld a, PAL_TREE
-    ld [hli], a
-
-    dec c
-    jr nz, .next_tree
-
-  ret
 ; ==========================================================================|80|
 
-; ======================================> GAME DATA <=======================|80|
-SpritesPalettes:
-    dw 32767, 801, 5728, 6593
-    dw 32767, 32125, 8735, 13569
-SpritesPalettesEnd:
-
-TilesPalettes:
-    dw 759, 1451, 649, 9729
-TilesPalettesEnd:
-
-GameTiles:
-  TilePlayerA:
-  DB $00,$00,$42,$00,$3C,$00,$66,$18
-  DB $3C,$66,$42,$3C,$24,$5A,$3C,$24
-  TilePlayerB:
-  DB $00,$00,$99,$24,$66,$18,$3C,$66
-  DB $42,$3C,$24,$5A,$18,$24,$24,$24
-  TileTree1:
-  DB $38,$46,$68,$96,$E4,$1B,$6E,$91
-  DB $D8,$27,$90,$6F,$00,$3E,$18,$18
-  TileTree2:
-  DB $30,$08,$2E,$11,$DC,$03,$90,$66
-  DB $10,$18,$60,$20,$10,$10,$10,$10
-  TileGround1:
-  DB $82,$04,$26,$42,$61,$20,$12,$00
-  DB $00,$00,$44,$88,$C5,$44,$10,$20
-  TileGround2:
-  DB $E4,$FE,$00,$D1,$B8,$BB,$32,$FE
-  DB $44,$CE,$14,$F7,$C3,$FF,$41,$D3
-  TileGround3:
-  DB $42,$FF,$CE,$BF,$27,$FA,$99,$7F
-  DB $38,$EF,$63,$DE,$4F,$FB,$99,$F6
-GameTilesEnd:
-; ==========================================================================|80|
+include "SRC/data.inc"

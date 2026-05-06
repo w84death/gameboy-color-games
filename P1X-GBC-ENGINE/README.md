@@ -29,7 +29,7 @@ zig build emulate
 
 ### 05-05-2026 Hello, World
 I asked ChatGPT for a simple Hello, World game that will show a custom sprite in the center of the screen.
-
+That project is saved in [HELLO-WORLD](/HELLO-WORLD/) folder.
 
 ### 05-05-2026 Engine Beginnings
 I started playing with the code, ask for more features. Starting refactoring it. Soon I got few sprites, background terrain, and movable player.
