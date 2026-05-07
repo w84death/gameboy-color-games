@@ -1,2 +1,4 @@
 *.sav
+*.map
+*.sym
 .zig-cache
