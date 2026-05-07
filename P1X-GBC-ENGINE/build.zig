@@ -32,6 +32,8 @@ pub fn build(b: *std.Build) void {
         "-p",
         "0",
         "-C",
+        "-t",
+        "P1X BGC Engine",
         "ROM/p1x_gbc_engine.gbc",
     });
     fix.step.dependOn(&cleanup.step);
