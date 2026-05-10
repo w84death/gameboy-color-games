@@ -147,14 +147,15 @@ MainLoop:
 
 ; ======================================> PROCEDURES <======================|80|
 WaitVBlank:
+  .wait_vblank_end
+  ld a, [rLY]
+  cp 144
+  jr nc, .wait_vblank_end
+
   .wait_vblank
   ld a, [rLY]
   cp 144
   jr c, .wait_vblank
-  .wait_vblank_end
-    ld a, [rLY]
-    cp 144
-    jr nc, .wait_vblank_end
   ret
 
   RandomByte:
