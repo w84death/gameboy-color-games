@@ -593,11 +593,11 @@ GenerateTerrain:
     ld [rVBK], a                        ; zero for tile data
 
 
-    .grass_or_flowe
+    .grass_or_flower
     call RandomByte
     and %00001111                       ; get 0..15
-    cp 2                                ; if 0..2 then flowe
-    jr c, .select_grass                 ; othervise grass
+    cp 2                                ; 2/16 grass, 14/16 flower
+    jr c, .select_grass
 
     .selct_flower
     call RandomByte
