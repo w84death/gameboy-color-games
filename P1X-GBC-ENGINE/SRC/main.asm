@@ -38,13 +38,20 @@ DEF SPRITE_Y_CENTER                     EQU 72 + 8
 DEF PLAYER_ANIM_DELAY                   EQU 4
 DEF TREE_FIRST_SLOT                     EQU 0
 DEF PLAYER_OAM_ADDR                     EQU _OAMRAM
+DEF PLAYER_BASE_OAM_ADDR                EQU PLAYER_OAM_ADDR + 8
 
-DEF TREE_TILE_A                         EQU 2
-DEF TREE_TILE_B                         EQU 3
 DEF TILES_BG_INDEX_START                EQU 6
-DEF PAL_PLAYER                          EQU 0   ; Obj pal
-DEF PAL_TREE                            EQU 0   ; Bg pal
-DEF PAL_GROUND                          EQU 1
+DEF BEE_BODY_TILE_LEFT                  EQU 0
+DEF BEE_BODY_TILE_RIGHT                 EQU 1
+DEF BEE_WINGS_FRAME0_LEFT               EQU 2
+DEF BEE_WINGS_FRAME0_RIGHT              EQU 4
+DEF BEE_WINGS_FRAME1_LEFT               EQU 3
+DEF BEE_WINGS_FRAME1_RIGHT              EQU 5
+DEF PAL_BEE_WINGS                       EQU 0   ; Obj pal
+DEF PAL_BEE_BODY                        EQU 1
+DEF PAL_GROUND                          EQU 2
+DEF BEE_WING_LEFT_ATTR                  EQU PAL_BEE_WINGS
+DEF BEE_WING_RIGHT_ATTR                 EQU PAL_BEE_WINGS
 ; ==========================================================================|80|
 
 ; ======================================> HEADER DATA <=====================|80|
@@ -251,12 +258,12 @@ ReadDPad:
   ret
 
 MoveRight:
-  ld hl, PLAYER_OAM_ADDR + 1
+  ld hl, PLAYER_BASE_OAM_ADDR + 1
   ld a, [hl]
   cp OAM_RIGHT_THRESH
   jr nc, .scroll_camera
 
-  inc [hl]
+  call MovePlayerSpritesRight
   ret
 
   .scroll_camera
@@ -270,12 +277,12 @@ MoveRight:
   ret
 
 MoveLeft:
-  ld hl, PLAYER_OAM_ADDR + 1            ; sprite X
+  ld hl, PLAYER_BASE_OAM_ADDR + 1       ; sprite X
   ld a, [hl]
   cp OAM_LEFT_THRESH
   jr c, .scroll_camera
 
-  dec [hl]
+  call MovePlayerSpritesLeft
   ret
 
   .scroll_camera
@@ -289,12 +296,12 @@ MoveLeft:
   ret
 
 MoveUp:
-  ld hl, PLAYER_OAM_ADDR                ; sprite Y
+  ld hl, PLAYER_BASE_OAM_ADDR           ; sprite Y
   ld a, [hl]
   cp OAM_TOP_THRESH                     ; compare player Y with top threshold
   jr c, .scroll_camera                  ; jump if position is bigger
 
-  dec [hl]
+  call MovePlayerSpritesUp
   ret
 
   .scroll_camera
@@ -308,12 +315,12 @@ MoveUp:
   ret
 
 MoveDown:
-  ld hl, PLAYER_OAM_ADDR                ; sprite Y
+  ld hl, PLAYER_BASE_OAM_ADDR           ; sprite Y
   ld a, [hl]
   cp OAM_BOTTOM_THRESH
   jr nc, .scroll_camera
 
-  inc [hl]
+  call MovePlayerSpritesDown
   ret
 
   .scroll_camera
@@ -324,6 +331,50 @@ MoveDown:
 
   inc a
   ld [hl], a
+  ret
+
+MovePlayerSpritesRight:
+  ld hl, PLAYER_OAM_ADDR + 1
+  inc [hl]
+  ld hl, PLAYER_OAM_ADDR + 5
+  inc [hl]
+  ld hl, PLAYER_OAM_ADDR + 9
+  inc [hl]
+  ld hl, PLAYER_OAM_ADDR + 13
+  inc [hl]
+  ret
+
+MovePlayerSpritesLeft:
+  ld hl, PLAYER_OAM_ADDR + 1
+  dec [hl]
+  ld hl, PLAYER_OAM_ADDR + 5
+  dec [hl]
+  ld hl, PLAYER_OAM_ADDR + 9
+  dec [hl]
+  ld hl, PLAYER_OAM_ADDR + 13
+  dec [hl]
+  ret
+
+MovePlayerSpritesUp:
+  ld hl, PLAYER_OAM_ADDR
+  dec [hl]
+  ld hl, PLAYER_OAM_ADDR + 4
+  dec [hl]
+  ld hl, PLAYER_OAM_ADDR + 8
+  dec [hl]
+  ld hl, PLAYER_OAM_ADDR + 12
+  dec [hl]
+  ret
+
+MovePlayerSpritesDown:
+  ld hl, PLAYER_OAM_ADDR
+  inc [hl]
+  ld hl, PLAYER_OAM_ADDR + 4
+  inc [hl]
+  ld hl, PLAYER_OAM_ADDR + 8
+  inc [hl]
+  ld hl, PLAYER_OAM_ADDR + 12
+  inc [hl]
   ret
 
 
@@ -343,22 +394,72 @@ AnimatePlayer:
     xor 1
     ld [PlayerAnimFrame], a
 
-  .apply_tile:
-  ld hl, PLAYER_OAM_ADDR + 2
-  add 2
-  ld [hli], a
+  .apply_tiles:
+    ld a, [PlayerAnimFrame]
+    or a
+    jr z, .frame0
+
+  .frame1:
+    ld hl, PLAYER_OAM_ADDR + 2
+    ld a, BEE_WINGS_FRAME1_LEFT
+    ld [hl], a
+    ld hl, PLAYER_OAM_ADDR + 6
+    ld a, BEE_WINGS_FRAME1_RIGHT
+    ld [hl], a
+    jr .done
+
+  .frame0:
+    ld hl, PLAYER_OAM_ADDR + 2
+    ld a, BEE_WINGS_FRAME0_LEFT
+    ld [hl], a
+    ld hl, PLAYER_OAM_ADDR + 6
+    ld a, BEE_WINGS_FRAME0_RIGHT
+    ld [hl], a
 .done
   ret
 
 InitPlayer:
-  ld hl, PLAYER_OAM_ADDR                ; sprite slot
-  ld a, SPRITE_Y_CENTER                 ; Y pos
+  ; top-left wing
+  ld hl, PLAYER_OAM_ADDR
+  ld a, SPRITE_Y_CENTER - TILE_SIZE + 3
   ld [hli], a
-  ld a, SPRITE_X_CENTER                 ; X pos
+  ld a, SPRITE_X_CENTER
   ld [hli], a
-  ld a, [PlayerAnimFrame]               ; current animation frame
+  ld a, BEE_WINGS_FRAME0_LEFT
   ld [hli], a
-  ld a, PAL_PLAYER                      ; palette
+  ld a, BEE_WING_LEFT_ATTR
+  ld [hli], a
+
+
+
+  ; top-right wing
+  ld a, SPRITE_Y_CENTER - TILE_SIZE + 3
+  ld [hli], a
+  ld a, SPRITE_X_CENTER + TILE_SIZE
+  ld [hli], a
+  ld a, BEE_WINGS_FRAME0_RIGHT
+  ld [hli], a
+  ld a, BEE_WING_RIGHT_ATTR
+  ld [hli], a
+
+  ; bottom-left body (anchor)
+  ld a, SPRITE_Y_CENTER
+  ld [hli], a
+  ld a, SPRITE_X_CENTER
+  ld [hli], a
+  ld a, BEE_BODY_TILE_LEFT
+  ld [hli], a
+  ld a, PAL_BEE_BODY
+  ld [hli], a
+
+  ; bottom-right body
+  ld a, SPRITE_Y_CENTER
+  ld [hli], a
+  ld a, SPRITE_X_CENTER + TILE_SIZE
+  ld [hli], a
+  ld a, BEE_BODY_TILE_RIGHT
+  ld [hli], a
+  ld a, PAL_BEE_BODY
   ld [hli], a
   ret
 
@@ -372,6 +473,10 @@ GenerateTerrain:
 
     call RandomByte
     and %00000111                       ; get 0..7
+    cp 5                                ; for the range 5..7
+    jr c, .ok                           ; map to
+        sub 3                           ; 3..5
+    .ok
     ld d, a                             ; save tile index
     add a, TILES_BG_INDEX_START         ; shift over player sprites
     ld [hl], a                          ; write tile id
@@ -381,10 +486,20 @@ GenerateTerrain:
 
     ld a, d                             ; load tile index
     cp 4                                ; 0..3 vs 4..7
-    xor a                               ; set pal 0
-    jr c, .pal_set                      ; if <4 skip pal 1
-    ld a, 1                             ; set pal 1
-    .pal_set
+    ld a, PAL_GROUND                    ; set palette
+    ld d, a                             ; keep palette bits
+
+    call RandomByte
+    and %00000001                       ; 50% chance for X mirror
+    jr z, .attr_no_xflip
+      ld a, d
+      or OAMF_XFLIP                     ; BG attr bit 5 = X flip
+      jr .attr_ready
+
+    .attr_no_xflip
+      ld a, d
+
+    .attr_ready
     ld [hli], a                         ; write attribute and inc hl poiner
 
     dec bc                              ; reduce loop index i16
