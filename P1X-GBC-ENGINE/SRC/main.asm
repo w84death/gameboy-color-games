@@ -33,17 +33,15 @@ DEF OAM_BOTTOM_THRESH                   EQU 144
 DEF CAMERA_X_MAX                        EQU 96
 DEF CAMERA_Y_MAX                        EQU 112
 
-DEF TREE_COUNT                          EQU 24
 DEF SPRITE_X_CENTER                     EQU 80 + 8
 DEF SPRITE_Y_CENTER                     EQU 72 + 8
 DEF PLAYER_ANIM_DELAY                   EQU 4
 DEF TREE_FIRST_SLOT                     EQU 0
-DEF PLAYER_SLOT                         EQU TREE_COUNT + 5
-DEF PLAYER_OAM_ADDR                     EQU _OAMRAM + PLAYER_SLOT * 4
+DEF PLAYER_OAM_ADDR                     EQU _OAMRAM
 
 DEF TREE_TILE_A                         EQU 2
 DEF TREE_TILE_B                         EQU 3
-DEF TILES_BG_INDEX_START                EQU 2
+DEF TILES_BG_INDEX_START                EQU 6
 DEF PAL_PLAYER                          EQU 0   ; Obj pal
 DEF PAL_TREE                            EQU 0   ; Bg pal
 DEF PAL_GROUND                          EQU 1
@@ -347,8 +345,8 @@ AnimatePlayer:
 
   .apply_tile:
   ld hl, PLAYER_OAM_ADDR + 2
-  ld [hl], a
-
+  add 2
+  ld [hli], a
 .done
   ret
 
@@ -400,3 +398,4 @@ GenerateTerrain:
 ; ==========================================================================|80|
 
 include "SRC/data.inc"
+include "SRC/palette.inc"
