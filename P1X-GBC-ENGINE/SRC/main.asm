@@ -56,6 +56,9 @@ DEF BEE_WING_RIGHT_ATTR                 EQU PAL_BEE_WINGS
 ; ==========================================================================|80|
 
 ; ======================================> HEADER DATA <=====================|80|
+SECTION "VBlank vector", ROM0[$0040]
+  jp VBlankISR
+
 SECTION "Header", ROM0[$100]
   nop
   jp Entry
@@ -66,6 +69,7 @@ SECTION "Header", ROM0[$100]
 SECTION "WRAM Data", WRAM0
 RandomSeed:                             ds 1
 FrameCounter:                           ds 1
+FrameReady:                             ds 1
 PlayerAnimTimer:                        ds 1
 PlayerAnimFrame:                        ds 1
 PlayerFacing:                           ds 1
@@ -78,6 +82,10 @@ SECTION "Main", ROM0[$150]
 
 Entry:
   di                                    ; disable interrups
+  ld sp, $FFFE
+  xor a
+  ld [rIE], a
+  ld [rIF], a
   call WaitVBlank
 
   xor a
@@ -96,6 +104,7 @@ Entry:
   .init_player
   xor a
   ld [FrameCounter], a
+  ld [FrameReady], a
   ld [PlayerAnimFrame], a
   ld [PlayerFacing], a
   ld a, PLAYER_ANIM_DELAY
@@ -136,9 +145,15 @@ Entry:
   ld a, LCDCF_ON | LCDCF_OBJON | LCDCF_BGON | LCDCF_BG8000 | LCDCF_BG9800
   ld [rLCDC], a
 
+  xor a
+  ld [rIF], a
+  ld a, IEF_VBLANK
+  ld [rIE], a
+  ei
+
 ; ======================================> MAIN LOOP <=======================|80|
 MainLoop:
-  call WaitVBlank
+  call WaitFrame
   call HandleDPad
   call AnimatePlayer
   call UpdateCamera
@@ -160,6 +175,23 @@ WaitVBlank:
   cp 144
   jr c, .wait_vblank
   ret
+
+WaitFrame:
+  halt
+  nop
+  ld a, [FrameReady]
+  and a
+  jr z, WaitFrame
+  xor a
+  ld [FrameReady], a
+  ret
+
+VBlankISR:
+  push af
+  ld a, 1
+  ld [FrameReady], a
+  pop af
+  reti
 
   RandomByte:
     push bc
@@ -592,6 +624,8 @@ GenerateTerrain:
     .skip_flower
 
     ld d, a                             ; keep palette bits
+    call RandomByte
+    and %00000001                       ; 50% chance for X mirror
     jr z, .attr_no_xflip
       ld a, d
       or OAMF_XFLIP                     ; BG attr bit 5 = X flip
