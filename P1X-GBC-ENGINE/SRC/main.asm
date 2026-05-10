@@ -49,6 +49,7 @@ DEF BEE_WINGS_FRAME1_LEFT               EQU 3
 DEF BEE_WINGS_FRAME1_RIGHT              EQU 5
 DEF PAL_BEE_WINGS                       EQU 0   ; Obj pal
 DEF PAL_BEE_BODY                        EQU 1
+DEF PAL_FLOWER                          EQU 1
 DEF PAL_GROUND                          EQU 2
 DEF BEE_WING_LEFT_ATTR                  EQU PAL_BEE_WINGS
 DEF BEE_WING_RIGHT_ATTR                 EQU PAL_BEE_WINGS
@@ -67,6 +68,7 @@ RandomSeed:                             ds 1
 FrameCounter:                           ds 1
 PlayerAnimTimer:                        ds 1
 PlayerAnimFrame:                        ds 1
+PlayerFacing:                           ds 1
 CameraX:                                ds 1
 CameraY:                                ds 1
 ; ==========================================================================|80|
@@ -95,6 +97,7 @@ Entry:
   xor a
   ld [FrameCounter], a
   ld [PlayerAnimFrame], a
+  ld [PlayerFacing], a
   ld a, PLAYER_ANIM_DELAY
   ld [PlayerAnimTimer], a
 
@@ -259,6 +262,10 @@ ReadDPad:
   ret
 
 MoveRight:
+  ld a, 1
+  ld [PlayerFacing], a
+  call ApplyBeeFacingTiles
+
   ld hl, PLAYER_BASE_OAM_ADDR + 1
   ld a, [hl]
   cp OAM_RIGHT_THRESH
@@ -278,6 +285,10 @@ MoveRight:
   ret
 
 MoveLeft:
+  xor a
+  ld [PlayerFacing], a
+  call ApplyBeeFacingTiles
+
   ld hl, PLAYER_BASE_OAM_ADDR + 1       ; sprite X
   ld a, [hl]
   cp OAM_LEFT_THRESH
@@ -394,29 +405,104 @@ AnimatePlayer:
     ld a, [PlayerAnimFrame]
     xor 1
     ld [PlayerAnimFrame], a
-
-  .apply_tiles:
-    ld a, [PlayerAnimFrame]
-    or a
-    jr z, .frame0
-
-  .frame1:
-    ld hl, PLAYER_OAM_ADDR + 2
-    ld a, BEE_WINGS_FRAME1_LEFT
-    ld [hl], a
-    ld hl, PLAYER_OAM_ADDR + 6
-    ld a, BEE_WINGS_FRAME1_RIGHT
-    ld [hl], a
-    jr .done
-
-  .frame0:
-    ld hl, PLAYER_OAM_ADDR + 2
-    ld a, BEE_WINGS_FRAME0_LEFT
-    ld [hl], a
-    ld hl, PLAYER_OAM_ADDR + 6
-    ld a, BEE_WINGS_FRAME0_RIGHT
-    ld [hl], a
+  call ApplyBeeFacingTiles
 .done
+  ret
+
+ApplyBeeFacingTiles:
+  ; attributes based on facing
+  ld a, [PlayerFacing]
+  or a
+  jr z, .face_left_attr
+
+.face_right_attr
+  ld hl, PLAYER_OAM_ADDR + 3
+  ld a, BEE_WING_LEFT_ATTR | OAMF_XFLIP
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 7
+  ld a, BEE_WING_RIGHT_ATTR | OAMF_XFLIP
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 11
+  ld a, PAL_BEE_BODY | OAMF_XFLIP
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 15
+  ld a, PAL_BEE_BODY | OAMF_XFLIP
+  ld [hl], a
+  jr .attr_done
+
+.face_left_attr
+  ld hl, PLAYER_OAM_ADDR + 3
+  ld a, BEE_WING_LEFT_ATTR
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 7
+  ld a, BEE_WING_RIGHT_ATTR
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 11
+  ld a, PAL_BEE_BODY
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 15
+  ld a, PAL_BEE_BODY
+  ld [hl], a
+
+.attr_done
+  ; body tiles based on facing
+  ld a, [PlayerFacing]
+  or a
+  jr z, .face_left_body
+
+.face_right_body
+  ld hl, PLAYER_OAM_ADDR + 10
+  ld a, BEE_BODY_TILE_RIGHT
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 14
+  ld a, BEE_BODY_TILE_LEFT
+  ld [hl], a
+  jr .body_done
+
+.face_left_body
+  ld hl, PLAYER_OAM_ADDR + 10
+  ld a, BEE_BODY_TILE_LEFT
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 14
+  ld a, BEE_BODY_TILE_RIGHT
+  ld [hl], a
+
+.body_done
+  ; wing tiles based on anim frame and facing
+  ld a, [PlayerAnimFrame]
+  or a
+  jr z, .anim0
+
+.anim1
+  ld b, BEE_WINGS_FRAME1_LEFT
+  ld c, BEE_WINGS_FRAME1_RIGHT
+  jr .apply_wings
+
+.anim0
+  ld b, BEE_WINGS_FRAME0_LEFT
+  ld c, BEE_WINGS_FRAME0_RIGHT
+
+.apply_wings
+  ld a, [PlayerFacing]
+  or a
+  jr z, .face_left_wings
+
+.face_right_wings
+  ld hl, PLAYER_OAM_ADDR + 2
+  ld a, c
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 6
+  ld a, b
+  ld [hl], a
+  ret
+
+.face_left_wings
+  ld hl, PLAYER_OAM_ADDR + 2
+  ld a, b
+  ld [hl], a
+  ld hl, PLAYER_OAM_ADDR + 6
+  ld a, c
+  ld [hl], a
   ret
 
 InitPlayer:
@@ -462,6 +548,8 @@ InitPlayer:
   ld [hli], a
   ld a, PAL_BEE_BODY
   ld [hli], a
+
+  call ApplyBeeFacingTiles
   ret
 
 GenerateTerrain:
@@ -472,12 +560,23 @@ GenerateTerrain:
     xor a
     ld [rVBK], a                        ; zero for tile data
 
+
+    .grass_or_flowe
+    call RandomByte
+    and %00001111                       ; get 0..15
+    cp 2                                ; if 0..2 then flowe
+    jr c, .select_grass                 ; othervise grass
+
+    .selct_flower
+    call RandomByte
+    and %00000011                       ; get 0..3
+    jr .draw_tile
+
+    .select_grass
     call RandomByte
     and %00000111                       ; get 0..7
-    cp 5                                ; for the range 5..7
-    jr c, .ok                           ; map to
-        sub 3                           ; 3..5
-    .ok
+
+    .draw_tile
     ld d, a                             ; save tile index
     add a, TILES_BG_INDEX_START         ; shift over player sprites
     ld [hl], a                          ; write tile id
@@ -486,12 +585,13 @@ GenerateTerrain:
     ld [rVBK], a                        ; one for attributes
 
     ld a, d                             ; load tile index
-    cp 4                                ; 0..3 vs 4..7
+    cp 6                                ; 0..5 vs 6..7
     ld a, PAL_GROUND                    ; set palette
-    ld d, a                             ; keep palette bits
+    jr c, .skip_flower
+    ld a, PAL_FLOWER
+    .skip_flower
 
-    call RandomByte
-    and %00000001                       ; 50% chance for X mirror
+    ld d, a                             ; keep palette bits
     jr z, .attr_no_xflip
       ld a, d
       or OAMF_XFLIP                     ; BG attr bit 5 = X flip
