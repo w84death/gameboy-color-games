@@ -9,4 +9,5 @@ TilesPalettes:
     DW 27482,21140,6342,288
     DW 32126,22708,9328,288
     DW 2897,6987,1634,288
+
 TilesPalettesEnd:

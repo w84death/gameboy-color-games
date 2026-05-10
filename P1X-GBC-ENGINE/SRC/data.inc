@@ -16,24 +16,27 @@ DB $00,$00,$00,$00,$00,$00,$00,$00
 DB $FE,$FE,$FF,$01,$FE,$06,$F8,$78
 
 
-DB $7F,$FF,$FB,$FF,$FF,$FF,$DC,$FC
+DB $7F,$FF,$FB,$FF,$FF,$FF,$DF,$FF
 DB $FD,$FF,$FF,$FF,$B7,$FF,$FF,$FF
-DB $FF,$FF,$F7,$FF,$BF,$FF,$FF,$FD
+DB $FF,$FF,$F7,$BF,$BF,$FF,$FF,$FD
 DB $FD,$EF,$EF,$FF,$BF,$FF,$FF,$FF
-DB $FF,$DF,$DE,$FB,$FB,$FF,$EF,$BF
-DB $BF,$FE,$FE,$FF,$7B,$EF,$EF,$FF
+DB $FF,$DF,$DE,$FB,$EB,$FF,$EF,$BD
+DB $BD,$FF,$FD,$EF,$6B,$FF,$FF,$FF
 DB $BF,$FF,$ED,$EF,$7F,$F7,$FE,$F6
 DB $D7,$DD,$FF,$BD,$BD,$FF,$EF,$FF
 DB $6F,$7F,$FD,$BF,$B7,$F7,$FF,$EF
 DB $7D,$6D,$EF,$BB,$EB,$BF,$BF,$FF
 DB $FF,$FF,$F6,$F7,$7F,$6F,$FB,$AB
 DB $AF,$FD,$FF,$FD,$F5,$DF,$DF,$FF
-DB $FE,$FE,$CD,$8C,$B6,$45,$4A,$F5
-DB $E0,$EE,$B1,$E4,$CA,$F5,$F1,$FF
-DB $FF,$FF,$FB,$FD,$B4,$D9,$C0,$1F
-DB $0F,$FF,$E7,$FB,$F1,$C7,$C3,$FF
-DB $FF,$FF,$F7,$D7,$E6,$E3,$61,$83
-DB $B7,$C1,$E7,$DB,$CB,$BD,$FD,$FF
+DB $FD,$FD,$9B,$18,$6C,$8B,$95,$EB
+DB $C1,$DD,$E3,$C8,$F5,$EB,$E3,$FF
+DB $FF,$FF,$FB,$FD,$B4,$D9,$89,$DF
+DB $CF,$FF,$E7,$FB,$F1,$C7,$C3,$FF
+DB $FF,$FF,$F7,$D7,$E7,$E3,$61,$83
+DB $B7,$C1,$E7,$DB,$CB,$BD,$FF,$FF
+DB $FF,$FF,$F3,$F3,$B7,$93,$DB,$B7
+DB $FF,$FF,$CB,$C9,$CB,$DF,$FF,$FF
+
 
 GameTilesEnd:
 ; ==========================================================================|80|
