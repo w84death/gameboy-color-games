@@ -596,13 +596,13 @@ GenerateTerrain:
     .grass_or_flower
     call RandomByte
     and %00001111                       ; get 0..15
-    cp 2                                ; 2/16 grass, 14/16 flower
+    cp  15                             ; 2/16 grass, 14/16 flower
     jr c, .select_grass
 
-    .selct_flower
+    .select_flower
     call RandomByte
     and %00000011                       ; get 0..3
-    add 3
+    add 6
     jr .draw_tile
 
     .select_grass
@@ -623,10 +623,9 @@ GenerateTerrain:
     jr c, .skip_flower
     ;ld a, PAL_FLOWER
     call RandomByte
-    and %00000001
+    and %00000011
     inc a
     .skip_flower
-
 
 
     ld d, a                             ; keep palette bits
