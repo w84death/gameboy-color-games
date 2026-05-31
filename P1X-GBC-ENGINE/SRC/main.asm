@@ -49,8 +49,6 @@ DEF BEE_WINGS_FRAME1_LEFT               EQU 3
 DEF BEE_WINGS_FRAME1_RIGHT              EQU 5
 DEF PAL_BEE_WINGS                       EQU 0   ; Obj pal
 DEF PAL_BEE_BODY                        EQU 1
-DEF PAL_FLOWER                          EQU 1
-DEF PAL_GROUND                          EQU 2
 DEF BEE_WING_LEFT_ATTR                  EQU PAL_BEE_WINGS
 DEF BEE_WING_RIGHT_ATTR                 EQU PAL_BEE_WINGS
 ; ==========================================================================|80|
@@ -67,7 +65,6 @@ SECTION "Header", ROM0[$100]
 
 ; ======================================> WRAM DATA <=======================|80|
 SECTION "WRAM Data", WRAM0
-RandomSeed:                             ds 1
 FrameCounter:                           ds 1
 FrameReady:                             ds 1
 PlayerAnimTimer:                        ds 1
@@ -90,11 +87,6 @@ Entry:
 
   xor a
   ld [rLCDC], a
-
-  .init_randomizer
-  ld a, [rDIV]
-  or $01                                ; avoid zero
-  ld [RandomSeed], a
 
   .init_camera
   xor a
@@ -134,11 +126,11 @@ Entry:
     ld b, SpritesPalettesEnd - SpritesPalettes
     call LoadObjPalettesCGB
 
-    ld hl, TilesPalettes
-    ld b, TilesPalettesEnd - TilesPalettes
+    ld hl, DefaultLevelBgPalettes
+    ld b, DefaultLevelBgPalettesEnd - DefaultLevelBgPalettes
     call LoadBgPalettesCGB
 
-  call GenerateTerrain
+  call LoadDefaultLevel
   call InitPlayer
 
   .init_lcd
@@ -192,23 +184,6 @@ VBlankISR:
   ld [FrameReady], a
   pop af
   reti
-
-  RandomByte:
-    push bc
-
-    ld a, [RandomSeed]
-    ld b, a
-
-    ld a, [rDIV]
-    xor b
-    add $3D
-    xor $A7
-    rlca
-
-    ld [RandomSeed], a
-
-    pop bc
-    ret
 
 LoadBytes:
   ; Copies BC bytes from HL to DE
@@ -584,73 +559,39 @@ InitPlayer:
   call ApplyBeeFacingTiles
   ret
 
-GenerateTerrain:
-  ld hl, _SCRN0
-  ld bc, 32 * 32                        ; loop index i16
-
-  .next_tile
+LoadDefaultLevel:
+  .load_tiles
     xor a
-    ld [rVBK], a                        ; zero for tile data
+    ld [rVBK], a
 
+    ld hl, LevelTiles
+    ld de, BG_TILE_ADDR + (TILES_BG_INDEX_START * 16)
+    ld bc, LevelTilesEnd - LevelTiles
+    call LoadBytes
 
-    .grass_or_flower
-    call RandomByte
-    and %00001111                       ; get 0..15
-    cp  15                             ; 2/16 grass, 14/16 flower
-    jr c, .select_grass
+  .load_tilemap
+    xor a
+    ld [rVBK], a
 
-    .select_flower
-    call RandomByte
-    and %00000011                       ; get 0..3
-    add 6
-    jr .draw_tile
+    ld hl, DefaultLevelTileMap
+    ld de, BG_MAP_ADDR
+    ld bc, DefaultLevelTileMapEnd - DefaultLevelTileMap
+    call LoadBytes
 
-    .select_grass
-    call RandomByte
-    and %00000111                       ; get 0..7
-
-    .draw_tile
-    ld d, a                             ; save tile index
-    add a, TILES_BG_INDEX_START         ; shift over player sprites
-    ld [hl], a                          ; write tile id
-
+  .load_attrmap
     ld a, 1
-    ld [rVBK], a                        ; one for attributes
+    ld [rVBK], a
 
-    ld a, d                             ; load tile index
-    cp 6                                ; 0..5 vs 6..7
-    ld a, PAL_GROUND                    ; set palette
-    jr c, .skip_flower
-    ;ld a, PAL_FLOWER
-    call RandomByte
-    and %00000011
-    inc a
-    .skip_flower
-
-
-    ld d, a                             ; keep palette bits
-    call RandomByte
-    and %00000001                       ; 50% chance for X mirror
-    jr z, .attr_no_xflip
-      ld a, d
-      or OAMF_XFLIP                     ; BG attr bit 5 = X flip
-      jr .attr_ready
-
-    .attr_no_xflip
-      ld a, d
-
-    .attr_ready
-    ld [hli], a                         ; write attribute and inc hl poiner
-
-    dec bc                              ; reduce loop index i16
-    ld a, b                             ; copy high byte of index
-    or c                                ; or with low, if both 0 then zero flag
-    jr nz, .next_tile                   ; if non-zero repeat
+    ld hl, DefaultLevelAttrMap
+    ld de, BG_MAP_ADDR
+    ld bc, DefaultLevelAttrMapEnd - DefaultLevelAttrMap
+    call LoadBytes
 
     xor a
-        ld [rVBK], a
+    ld [rVBK], a
     ret
 ; ==========================================================================|80|
 
 include "SRC/data.inc"
 include "SRC/palette.inc"
+include "SRC/level.inc"

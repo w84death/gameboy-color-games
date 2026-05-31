@@ -2,3 +2,4 @@
 *.map
 *.sym
 .zig-cache
+P1X-GBC-ENGINE/BUILD/generated

@@ -1,0 +1,48 @@
+{
+    "activeFile": "",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "background.tsx": {
+            "scaleInDock": 4,
+            "scaleInEditor": 7.03
+        },
+        "default_level.tmx": {
+            "scale": 3,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 135.5,
+                "y": 142
+            }
+        },
+        "main_island.tmx": {
+            "scale": 5.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 57.9090909090909,
+                "y": 29.272727272727273
+            }
+        }
+    },
+    "last.imagePath": "/home/kj/Code/gameboy-color-games/BLUE-LAGOON-SURVIVOR/DOCS",
+    "map.height": 32,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 8,
+    "map.tileWidth": 8,
+    "map.width": 32,
+    "openFiles": [
+        "main_island.tmx",
+        "background.tsx"
+    ],
+    "project": "maps.tiled-project",
+    "recentFiles": [
+        "main_island.tmx",
+        "background.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 8,
+        "width": 8
+    }
+}
