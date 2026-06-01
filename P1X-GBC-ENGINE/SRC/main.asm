@@ -75,6 +75,8 @@ CameraX:                                ds 1
 CameraY:                                ds 1
 CurrentLevel:                           ds 1
 PrevButtons:                            ds 1
+LevelDataStart:                         ds 2
+LevelDataEnd:                           ds 2
 ; ==========================================================================|80|
 
 ; ======================================> MAIN SECTION <====================|80|
@@ -135,7 +137,8 @@ Entry:
     ld b, SpritesPalettesEnd - SpritesPalettes
     call LoadObjPalettesCGB
 
-  call LoadDefaultLevel
+  ld hl, GrasslandLevelDescriptor
+  call LoadLevel
   call InitPlayer
 
   .init_lcd
@@ -303,14 +306,16 @@ ToggleLevel:
   xor 1
   ld [CurrentLevel], a
   or a
-  jr z, .load_default
+  jr z, .load_grassland
 
 .load_desert
-  call LoadDesertLevelHot
+  ld hl, DesertLevelDescriptor
+  call LoadLevelHot
   ret
 
-.load_default
-  call LoadDefaultLevelHot
+.load_grassland
+  ld hl, GrasslandLevelDescriptor
+  call LoadLevelHot
   ret
 
 MoveRight:
@@ -604,19 +609,13 @@ InitPlayer:
   call ApplyBeeFacingTiles
   ret
 
-LoadDefaultLevelHot:
+LoadLevelHot:
+  push hl
   call WaitVBlank
   xor a
   ld [rLCDC], a
-  call LoadDefaultLevel
-  call RestoreLCD
-  ret
-
-LoadDesertLevelHot:
-  call WaitVBlank
-  xor a
-  ld [rLCDC], a
-  call LoadDesertLevel
+  pop hl
+  call LoadLevel
   call RestoreLCD
   ret
 
@@ -625,79 +624,99 @@ RestoreLCD:
   ld [rLCDC], a
   ret
 
-LoadDefaultLevel:
+LoadLevel:
+  ; HL = level descriptor:
+  ;   DW BgPalettes, BgPalettesEnd
+  ;   DW Tiles, TilesEnd
+  ;   DW TileMap, TileMapEnd
+  ;   DW AttrMap, AttrMapEnd
   .load_palettes
-    ld hl, DefaultLevelBgPalettes
-    ld b, DefaultLevelBgPalettesEnd - DefaultLevelBgPalettes
-    call LoadBgPalettesCGB
+    call ReadLevelDataRange
+    push hl
+    call LoadLevelBgPalettes
+    pop hl
 
   .load_tiles
+    call ReadLevelDataRange
+    push hl
     xor a
     ld [rVBK], a
-
-    ld hl, DefaultLevelTiles
     ld de, BG_TILE_ADDR + (TILES_BG_INDEX_START * 16)
-    ld bc, DefaultLevelTilesEnd - DefaultLevelTiles
-    call LoadBytes
+    call LoadLevelBytes
+    pop hl
 
   .load_tilemap
+    call ReadLevelDataRange
+    push hl
     xor a
     ld [rVBK], a
-
-    ld hl, DefaultLevelTileMap
     ld de, BG_MAP_ADDR
-    ld bc, DefaultLevelTileMapEnd - DefaultLevelTileMap
-    call LoadBytes
+    call LoadLevelBytes
+    pop hl
 
   .load_attrmap
+    call ReadLevelDataRange
+    push hl
     ld a, 1
     ld [rVBK], a
-
-    ld hl, DefaultLevelAttrMap
     ld de, BG_MAP_ADDR
-    ld bc, DefaultLevelAttrMapEnd - DefaultLevelAttrMap
-    call LoadBytes
+    call LoadLevelBytes
+    pop hl
 
     xor a
     ld [rVBK], a
     ret
 
-LoadDesertLevel:
-  .load_palettes
-    ld hl, DesertLevelBgPalettes
-    ld b, DesertLevelBgPalettesEnd - DesertLevelBgPalettes
-    call LoadBgPalettesCGB
+ReadLevelDataRange:
+  ld a, [hli]
+  ld [LevelDataStart], a
+  ld a, [hli]
+  ld [LevelDataStart + 1], a
+  ld a, [hli]
+  ld [LevelDataEnd], a
+  ld a, [hli]
+  ld [LevelDataEnd + 1], a
+  ret
 
-  .load_tiles
-    xor a
-    ld [rVBK], a
+LoadLevelBgPalettes:
+  ld a, [LevelDataStart]
+  ld l, a
+  ld a, [LevelDataStart + 1]
+  ld h, a
+  ld a, [LevelDataEnd]
+  sub l
+  ld b, a
+  call LoadBgPalettesCGB
+  ret
 
-    ld hl, DesertLevelTiles
-    ld de, BG_TILE_ADDR + (TILES_BG_INDEX_START * 16)
-    ld bc, DesertLevelTilesEnd - DesertLevelTiles
-    call LoadBytes
+LoadLevelBytes:
+  ; DE = destination
+  push de
 
-  .load_tilemap
-    xor a
-    ld [rVBK], a
+  ld a, [LevelDataEnd]
+  ld c, a
+  ld a, [LevelDataEnd + 1]
+  ld b, a
+  ld a, [LevelDataStart]
+  ld e, a
+  ld a, [LevelDataStart + 1]
+  ld d, a
 
-    ld hl, DesertLevelTileMap
-    ld de, BG_MAP_ADDR
-    ld bc, DesertLevelTileMapEnd - DesertLevelTileMap
-    call LoadBytes
+  ld a, c
+  sub e
+  ld c, a
+  ld a, b
+  sbc a, d
+  ld b, a
 
-  .load_attrmap
-    ld a, 1
-    ld [rVBK], a
+  ld a, e
+  ld l, a
+  ld a, d
+  ld h, a
 
-    ld hl, DesertLevelAttrMap
-    ld de, BG_MAP_ADDR
-    ld bc, DesertLevelAttrMapEnd - DesertLevelAttrMap
-    call LoadBytes
-
-    xor a
-    ld [rVBK], a
-    ret
+  pop de
+  call LoadBytes
+  ret
 ; ==========================================================================|80|
 
 include "SRC/data.inc"

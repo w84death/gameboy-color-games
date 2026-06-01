@@ -14,7 +14,7 @@ I started this project to learn 8-bit assembly. As an x86 assembly programmer I'
 
 The game generates two background sets during `zig build`:
 
-- current grassland/default level from `ASSETS/default_level.png`
+- grassland level from `ASSETS/grassland_level.png`
 - desert level rendered from `../BLUE-LAGOON-SURVIVOR/DOCS/desert_level.tmx` into `ASSETS/desert_level.png`
 
 The converter uses `rgbgfx` to emit background tiles, tile maps, attribute maps,

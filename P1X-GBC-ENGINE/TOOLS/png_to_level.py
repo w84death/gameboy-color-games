@@ -28,8 +28,8 @@ MAP_HEIGHT_TILES = 32
 TILE_SIZE = 8
 PALETTE_BYTES = MAX_BG_PALETTES * 4 * 2
 
-DEFAULT_LEVELS = (
-    ("DefaultLevel", ROOT / "ASSETS" / "default_level.png", "default_level"),
+LEVELS = (
+    ("GrasslandLevel", ROOT / "ASSETS" / "grassland_level.png", "grassland_level"),
     ("DesertLevel", ROOT / "ASSETS" / "desert_level.png", "desert_level"),
 )
 
@@ -248,7 +248,12 @@ def include_for(level: ConvertedLevel) -> str:
         f"{prefix}AttrMapEnd:\n\n"
         f"{prefix}BgPalettes:\n"
         f'    INCBIN "{rel(level.palettes)}"\n'
-        f"{prefix}BgPalettesEnd:\n"
+        f"{prefix}BgPalettesEnd:\n\n"
+        f"{prefix}Descriptor:\n"
+        f"    DW {prefix}BgPalettes, {prefix}BgPalettesEnd\n"
+        f"    DW {prefix}Tiles, {prefix}TilesEnd\n"
+        f"    DW {prefix}TileMap, {prefix}TileMapEnd\n"
+        f"    DW {prefix}AttrMap, {prefix}AttrMapEnd\n"
     )
 
 
@@ -266,14 +271,14 @@ def write_include(levels: tuple[ConvertedLevel, ...]) -> None:
 
 def requested_levels() -> tuple[tuple[str, Path, str], ...]:
     if len(sys.argv) == 1:
-        return DEFAULT_LEVELS
+        return LEVELS
     if len(sys.argv) != 3:
         fail(
-            "usage: TOOLS/png_to_level.py [default_level.png desert_level.png]\n"
-            "The build uses ASSETS/default_level.png and ASSETS/desert_level.png."
+            "usage: TOOLS/png_to_level.py [grassland_level.png desert_level.png]\n"
+            "The build uses ASSETS/grassland_level.png and ASSETS/desert_level.png."
         )
     return (
-        ("DefaultLevel", resolve_source_path(sys.argv[1]), "default_level"),
+        ("GrasslandLevel", resolve_source_path(sys.argv[1]), "grassland_level"),
         ("DesertLevel", resolve_source_path(sys.argv[2]), "desert_level"),
     )
 

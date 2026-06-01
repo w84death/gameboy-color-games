@@ -4,32 +4,38 @@ DEF LEVEL_MAP_WIDTH_TILES EQU 32
 DEF LEVEL_MAP_HEIGHT_TILES EQU 32
 DEF LEVEL_BG_TILE_BASE EQU 6
 
-; Source PNG: ASSETS/default_level.png
-DEF DEFAULTLEVEL_WIDTH_TILES EQU 32
-DEF DEFAULTLEVEL_HEIGHT_TILES EQU 32
-DEF DEFAULTLEVEL_BG_TILE_COUNT EQU 35
+; Source PNG: ASSETS/grassland_level.png
+DEF GRASSLANDLEVEL_WIDTH_TILES EQU 32
+DEF GRASSLANDLEVEL_HEIGHT_TILES EQU 32
+DEF GRASSLANDLEVEL_BG_TILE_COUNT EQU 35
 
-DefaultLevelTiles:
-    INCBIN "BUILD/generated/default_level.2bpp"
-DefaultLevelTilesEnd:
+GrasslandLevelTiles:
+    INCBIN "BUILD/generated/grassland_level.2bpp"
+GrasslandLevelTilesEnd:
 
-DefaultLevelTileMap:
-    INCBIN "BUILD/generated/default_level.tilemap"
-DefaultLevelTileMapEnd:
+GrasslandLevelTileMap:
+    INCBIN "BUILD/generated/grassland_level.tilemap"
+GrasslandLevelTileMapEnd:
 
-DefaultLevelAttrMap:
-    INCBIN "BUILD/generated/default_level.attrmap"
-DefaultLevelAttrMapEnd:
+GrasslandLevelAttrMap:
+    INCBIN "BUILD/generated/grassland_level.attrmap"
+GrasslandLevelAttrMapEnd:
 
-DefaultLevelBgPalettes:
-    INCBIN "BUILD/generated/default_level.pal"
-DefaultLevelBgPalettesEnd:
+GrasslandLevelBgPalettes:
+    INCBIN "BUILD/generated/grassland_level.pal"
+GrasslandLevelBgPalettesEnd:
+
+GrasslandLevelDescriptor:
+    DW GrasslandLevelBgPalettes, GrasslandLevelBgPalettesEnd
+    DW GrasslandLevelTiles, GrasslandLevelTilesEnd
+    DW GrasslandLevelTileMap, GrasslandLevelTileMapEnd
+    DW GrasslandLevelAttrMap, GrasslandLevelAttrMapEnd
 
 
 ; Source PNG: ASSETS/desert_level.png
 DEF DESERTLEVEL_WIDTH_TILES EQU 32
 DEF DESERTLEVEL_HEIGHT_TILES EQU 32
-DEF DESERTLEVEL_BG_TILE_COUNT EQU 23
+DEF DESERTLEVEL_BG_TILE_COUNT EQU 24
 
 DesertLevelTiles:
     INCBIN "BUILD/generated/desert_level.2bpp"
@@ -46,4 +52,10 @@ DesertLevelAttrMapEnd:
 DesertLevelBgPalettes:
     INCBIN "BUILD/generated/desert_level.pal"
 DesertLevelBgPalettesEnd:
+
+DesertLevelDescriptor:
+    DW DesertLevelBgPalettes, DesertLevelBgPalettesEnd
+    DW DesertLevelTiles, DesertLevelTilesEnd
+    DW DesertLevelTileMap, DesertLevelTileMapEnd
+    DW DesertLevelAttrMap, DesertLevelAttrMapEnd
 
