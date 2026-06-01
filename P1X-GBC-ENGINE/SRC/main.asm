@@ -14,6 +14,7 @@ DEF DPAD_RIGHT_BIT                      EQU $0000
 DEF DPAD_LEFT_BIT                       EQU $0001
 DEF DPAD_UP_BIT                         EQU $0002
 DEF DPAD_DOWN_BIT                       EQU $0003
+DEF BUTTON_START_BIT                    EQU $0003
 DEF SPRITE_TILE_ADDR                    EQU $8000
 DEF BG_TILE_ADDR                        EQU $8000
 DEF BG_MAP_ADDR                         EQU _SCRN0
@@ -72,6 +73,8 @@ PlayerAnimFrame:                        ds 1
 PlayerFacing:                           ds 1
 CameraX:                                ds 1
 CameraY:                                ds 1
+CurrentLevel:                           ds 1
+PrevButtons:                            ds 1
 ; ==========================================================================|80|
 
 ; ======================================> MAIN SECTION <====================|80|
@@ -92,6 +95,12 @@ Entry:
   xor a
   ld [CameraX], a
   ld [CameraY], a
+
+  .init_level_switch
+  xor a
+  ld [CurrentLevel], a
+  ld a, %00001111
+  ld [PrevButtons], a
 
   .init_player
   xor a
@@ -126,10 +135,6 @@ Entry:
     ld b, SpritesPalettesEnd - SpritesPalettes
     call LoadObjPalettesCGB
 
-    ld hl, DefaultLevelBgPalettes
-    ld b, DefaultLevelBgPalettesEnd - DefaultLevelBgPalettes
-    call LoadBgPalettesCGB
-
   call LoadDefaultLevel
   call InitPlayer
 
@@ -146,6 +151,7 @@ Entry:
 ; ======================================> MAIN LOOP <=======================|80|
 MainLoop:
   call WaitFrame
+  call HandleLevelSwap
   call HandleDPad
   call AnimatePlayer
   call UpdateCamera
@@ -266,6 +272,45 @@ ReadDPad:
   ld a, [rP1]
   ld a, [rP1]         ; read twice for stability
   and %00001111       ; clean hiher bits to leave only buttons information
+  ret
+
+HandleLevelSwap:
+  call ReadButtons
+  ld b, a
+  ld a, [PrevButtons]
+  ld c, a
+  ld a, b
+  ld [PrevButtons], a
+
+  bit BUTTON_START_BIT, b               ; pressed = 0
+  ret nz
+  bit BUTTON_START_BIT, c               ; ignore held START
+  ret z
+
+  call ToggleLevel
+  ret
+
+ReadButtons:
+  ld a, %00010000                       ; select A/B/Select/Start
+  ld [rP1], a
+  ld a, [rP1]
+  ld a, [rP1]
+  and %00001111
+  ret
+
+ToggleLevel:
+  ld a, [CurrentLevel]
+  xor 1
+  ld [CurrentLevel], a
+  or a
+  jr z, .load_default
+
+.load_desert
+  call LoadDesertLevelHot
+  ret
+
+.load_default
+  call LoadDefaultLevelHot
   ret
 
 MoveRight:
@@ -559,14 +604,40 @@ InitPlayer:
   call ApplyBeeFacingTiles
   ret
 
+LoadDefaultLevelHot:
+  call WaitVBlank
+  xor a
+  ld [rLCDC], a
+  call LoadDefaultLevel
+  call RestoreLCD
+  ret
+
+LoadDesertLevelHot:
+  call WaitVBlank
+  xor a
+  ld [rLCDC], a
+  call LoadDesertLevel
+  call RestoreLCD
+  ret
+
+RestoreLCD:
+  ld a, LCDCF_ON | LCDCF_OBJON | LCDCF_BGON | LCDCF_BG8000 | LCDCF_BG9800
+  ld [rLCDC], a
+  ret
+
 LoadDefaultLevel:
+  .load_palettes
+    ld hl, DefaultLevelBgPalettes
+    ld b, DefaultLevelBgPalettesEnd - DefaultLevelBgPalettes
+    call LoadBgPalettesCGB
+
   .load_tiles
     xor a
     ld [rVBK], a
 
-    ld hl, LevelTiles
+    ld hl, DefaultLevelTiles
     ld de, BG_TILE_ADDR + (TILES_BG_INDEX_START * 16)
-    ld bc, LevelTilesEnd - LevelTiles
+    ld bc, DefaultLevelTilesEnd - DefaultLevelTiles
     call LoadBytes
 
   .load_tilemap
@@ -585,6 +656,43 @@ LoadDefaultLevel:
     ld hl, DefaultLevelAttrMap
     ld de, BG_MAP_ADDR
     ld bc, DefaultLevelAttrMapEnd - DefaultLevelAttrMap
+    call LoadBytes
+
+    xor a
+    ld [rVBK], a
+    ret
+
+LoadDesertLevel:
+  .load_palettes
+    ld hl, DesertLevelBgPalettes
+    ld b, DesertLevelBgPalettesEnd - DesertLevelBgPalettes
+    call LoadBgPalettesCGB
+
+  .load_tiles
+    xor a
+    ld [rVBK], a
+
+    ld hl, DesertLevelTiles
+    ld de, BG_TILE_ADDR + (TILES_BG_INDEX_START * 16)
+    ld bc, DesertLevelTilesEnd - DesertLevelTiles
+    call LoadBytes
+
+  .load_tilemap
+    xor a
+    ld [rVBK], a
+
+    ld hl, DesertLevelTileMap
+    ld de, BG_MAP_ADDR
+    ld bc, DesertLevelTileMapEnd - DesertLevelTileMap
+    call LoadBytes
+
+  .load_attrmap
+    ld a, 1
+    ld [rVBK], a
+
+    ld hl, DesertLevelAttrMap
+    ld de, BG_MAP_ADDR
+    ld bc, DesertLevelAttrMapEnd - DesertLevelAttrMap
     call LoadBytes
 
     xor a

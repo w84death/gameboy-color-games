@@ -3,11 +3,20 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const project_root = b.path(".");
 
+    const render_desert_level = b.addSystemCommand(&[_][]const u8{
+        "python3",
+        "TOOLS/tmx_to_png.py",
+        "../BLUE-LAGOON-SURVIVOR/DOCS/desert_level.tmx",
+        "ASSETS/desert_level.png",
+    });
+    render_desert_level.setCwd(project_root);
+
     const convert_level = b.addSystemCommand(&[_][]const u8{
         "python3",
         "TOOLS/png_to_level.py",
     });
     convert_level.setCwd(project_root);
+    convert_level.step.dependOn(&render_desert_level.step);
 
     const assemble = b.addSystemCommand(&[_][]const u8{
         "rgbasm",

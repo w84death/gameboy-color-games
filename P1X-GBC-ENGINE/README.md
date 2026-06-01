@@ -12,9 +12,15 @@ I started this project to learn 8-bit assembly. As an x86 assembly programmer I'
 
 ## Level PNG workflow
 
-The default level is generated from `ASSETS/default_level.png` during `zig build`.
-The converter uses `rgbgfx` to emit background tiles, a tile map, an attribute map,
+The game generates two background sets during `zig build`:
+
+- current grassland/default level from `ASSETS/default_level.png`
+- desert level rendered from `../BLUE-LAGOON-SURVIVOR/DOCS/desert_level.tmx` into `ASSETS/desert_level.png`
+
+The converter uses `rgbgfx` to emit background tiles, tile maps, attribute maps,
 and CGB palettes into `BUILD/generated/`, then writes `SRC/level.inc` for RGBDS.
+Press `START` in-game to hot-swap the active background tiles, tile map,
+attribute map, and BG palettes between grassland and desert.
 
 Limits enforced by the build:
 - max 8 CGB background palettes
